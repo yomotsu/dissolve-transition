@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>=^.^=</title>
+<style>
+body {background: url( "./bg.png" );}
+</style>
+</head>
+<body>
+<a href="https://github.com/yomotsu/dissolve-transitions">GitHub repo</a><br>
+<button type="button">start</button><br>
+<canvas width="1000" height="500"></canvas>
+
+<script src="../dist/dissolve-transitions.js"></script>
+<script>
+
+Promise.all( [
+	DissolveTransitions.loadImage( './medias/1.jpg' ),
+	DissolveTransitions.loadImage( './medias/noise.jpg' )
+] ).then( ( images ) => {
+
+	const dissolveTransitions = new DissolveTransitions(
+		document.querySelector( 'canvas' ),
+		DissolveTransitions.convertPowerOfTwo( images[ 0 ] ),
+		DissolveTransitions.convertPowerOfTwo( images[ 1 ] )
+	)
+
+	document.querySelector( 'button' ).addEventListener( 'click', () => {
+
+		dissolveTransitions.start();
+
+	} );
+
+} );
+
+</script>
+
+</body>
+</html>
