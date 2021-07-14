@@ -8,27 +8,27 @@ body {background: url( "./bg.png" );}
 </style>
 </head>
 <body>
-<a href="https://github.com/yomotsu/dissolve-transitions">GitHub repo</a><br>
+<a href="https://github.com/yomotsu/dissolve-transition">GitHub repo</a><br>
 <button type="button">start</button><br>
 <canvas width="1000" height="500"></canvas>
 
-<script src="../dist/dissolve-transitions.js"></script>
+<script src="../dist/dissolve-transition.js"></script>
 <script>
 
 Promise.all( [
-	DissolveTransitions.loadImage( './medias/1.jpg' ),
-	DissolveTransitions.loadImage( './medias/noise.jpg' )
+	DissolveTransition.loadImage( './medias/1.jpg' ),
+	DissolveTransition.loadImage( './medias/noise.jpg' )
 ] ).then( ( images ) => {
 
-	const dissolveTransitions = new DissolveTransitions(
+	const dissolveTransition = new DissolveTransition(
 		document.querySelector( 'canvas' ),
-		DissolveTransitions.convertPowerOfTwo( images[ 0 ] ),
-		DissolveTransitions.convertPowerOfTwo( images[ 1 ] )
+		DissolveTransition.convertPowerOfTwo( images[ 0 ] ),
+		DissolveTransition.convertPowerOfTwo( images[ 1 ] )
 	)
 
 	document.querySelector( 'button' ).addEventListener( 'click', () => {
 
-		dissolveTransitions.start();
+		dissolveTransition.start();
 
 	} );
 
