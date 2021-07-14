@@ -17,7 +17,7 @@ const UV = new Float32Array( [
 	0.0, 1.0,
 ] );
 
-export class DissolveTransitions extends EventDispatcher {
+export class DissolveTransition extends EventDispatcher {
 
 	static loadImage( imageSource: string ): Promise<HTMLImageElement> {
 

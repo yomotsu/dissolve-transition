@@ -1,12 +1,12 @@
 {
-  "name": "dissolve-transitions",
+  "name": "dissolve-transition",
   "version": "0.0.0",
   "author": "Yomotsu",
   "license": "MIT",
-  "repository": "yomotsu/dissolve-transitions",
-  "jsnext:main": "dist/dissolve-transitions.module.js",
-  "module": "dist/dissolve-transitions.module.js",
-  "main": "dist/dissolve-transitions.js",
+  "repository": "yomotsu/dissolve-transition",
+  "jsnext:main": "dist/dissolve-transition.module.js",
+  "module": "dist/dissolve-transition.module.js",
+  "main": "dist/dissolve-transition.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
     "rollup": "^2.53.1",
@@ -17,7 +17,7 @@
   },
   "scripts": {
     "dev": "rollup --config --watch",
-    "build": "rollup --config && terser 'dist/dissolve-transitions.js' -o 'dist/dissolve-transitions.min.js' --comments '/^!/'"
+    "build": "rollup --config && terser 'dist/dissolve-transition.js' -o 'dist/dissolve-transition.min.js' --comments '/^!/'"
   },
   "keywords": []
 }

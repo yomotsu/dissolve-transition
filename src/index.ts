@@ -1,2 +1,2 @@
-import { DissolveTransitions } from './DissolveTransitions';
-export default DissolveTransitions;
+import { DissolveTransition } from './DissolveTransition';
+export default DissolveTransition;

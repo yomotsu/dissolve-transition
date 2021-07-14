@@ -3,8 +3,8 @@ import pkg from './package.json';
 
 const license = `/*!
  * @author yomotsu
- * dissolve-transitions
- * https://github.com/yomotsu/dissolve-transitions
+ * dissolve-transition
+ * https://github.com/yomotsu/dissolve-transition
  * Released under the MIT License.
  */`;
 
@@ -13,7 +13,7 @@ export default {
 	output: [
 		{
 			format: 'umd',
-			name: 'DissolveTransitions',
+			name: 'DissolveTransition',
 			file: pkg.main,
 			banner: license,
 			indent: '\t',

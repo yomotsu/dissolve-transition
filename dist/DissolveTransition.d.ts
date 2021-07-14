@@ -1,6 +1,6 @@
 import type { TextureSource } from './types';
 import { EventDispatcher } from './EventDispatcher';
-export declare class DissolveTransitions extends EventDispatcher {
+export declare class DissolveTransition extends EventDispatcher {
     static loadImage(imageSource: string): Promise<HTMLImageElement>;
     static convertPowerOfTwo(image: HTMLImageElement): TextureSource;
     duration: number;

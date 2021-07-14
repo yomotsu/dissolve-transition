@@ -1,7 +1,7 @@
 /*!
  * @author yomotsu
- * dissolve-transitions
- * https://github.com/yomotsu/dissolve-transitions
+ * dissolve-transition
+ * https://github.com/yomotsu/dissolve-transition
  * Released under the MIT License.
  */
 /*! *****************************************************************************
@@ -172,9 +172,9 @@ var UV = new Float32Array([
     1.0, 1.0,
     0.0, 1.0,
 ]);
-var DissolveTransitions = (function (_super) {
-    __extends(DissolveTransitions, _super);
-    function DissolveTransitions(canvas, media, mask) {
+var DissolveTransition = (function (_super) {
+    __extends(DissolveTransition, _super);
+    function DissolveTransition(canvas, media, mask) {
         var _this = _super.call(this) || this;
         _this.duration = 2000;
         _this._progress = 0;
@@ -229,7 +229,7 @@ var DissolveTransitions = (function (_super) {
         _this.setSize(_this._canvas.width, _this._canvas.height);
         return _this;
     }
-    DissolveTransitions.loadImage = function (imageSource) {
+    DissolveTransition.loadImage = function (imageSource) {
         return new Promise(function (resolve) {
             var img = new Image();
             var onLoad = function () {
@@ -240,7 +240,7 @@ var DissolveTransitions = (function (_super) {
             img.src = imageSource;
         });
     };
-    DissolveTransitions.convertPowerOfTwo = function (image) {
+    DissolveTransition.convertPowerOfTwo = function (image) {
         var _a;
         var $canvas = document.createElement('canvas');
         if (image.naturalWidth === 0) {
@@ -256,7 +256,7 @@ var DissolveTransitions = (function (_super) {
         (_a = $canvas.getContext('2d')) === null || _a === void 0 ? void 0 : _a.drawImage(image, 0, 0, width, height);
         return $canvas;
     };
-    DissolveTransitions.prototype.start = function () {
+    DissolveTransition.prototype.start = function () {
         var _this = this;
         if (this._isRunning)
             return;
@@ -276,7 +276,7 @@ var DissolveTransitions = (function (_super) {
         };
         tick();
     };
-    DissolveTransitions.prototype.setSize = function (w, h) {
+    DissolveTransition.prototype.setSize = function (w, h) {
         if (this._canvas.width === w && this._canvas.height === h)
             return;
         this._canvas.width = w;
@@ -284,7 +284,7 @@ var DissolveTransitions = (function (_super) {
         this._gl.viewport(0, 0, w, h);
         this._updateAspect();
     };
-    DissolveTransitions.prototype.render = function () {
+    DissolveTransition.prototype.render = function () {
         if (this._destroyed)
             return;
         this._gl.clearColor(0, 0, 0, 0);
@@ -297,7 +297,7 @@ var DissolveTransitions = (function (_super) {
             this.dispatchEvent({ type: 'transitionEnd' });
         }
     };
-    DissolveTransitions.prototype.destroy = function (removeElement) {
+    DissolveTransition.prototype.destroy = function (removeElement) {
         if (removeElement === void 0) { removeElement = false; }
         this._destroyed = true;
         this._isRunning = false;
@@ -321,7 +321,7 @@ var DissolveTransitions = (function (_super) {
             this._canvas.parentNode.removeChild(this._canvas);
         }
     };
-    DissolveTransitions.prototype._updateTexture = function () {
+    DissolveTransition.prototype._updateTexture = function () {
         this._gl.activeTexture(this._gl.TEXTURE0);
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._media.texture);
         this._gl.uniform1i(this._uniformLocations.media, 0);
@@ -330,7 +330,7 @@ var DissolveTransitions = (function (_super) {
         this._gl.uniform1i(this._uniformLocations.mask, 1);
         this._onUpdate();
     };
-    DissolveTransitions.prototype._updateAspect = function () {
+    DissolveTransition.prototype._updateAspect = function () {
         var canvasAspect = this._canvas.width / this._canvas.height;
         var imageAspect = this._media instanceof HTMLImageElement ? this._media.naturalWidth / this._media.naturalHeight :
             this._media instanceof HTMLCanvasElement ? this._media.width / this._media.height :
@@ -354,7 +354,7 @@ var DissolveTransitions = (function (_super) {
         this._gl.bufferData(this._gl.ARRAY_BUFFER, this._vertexes, this._gl.STATIC_DRAW);
         this._onUpdate();
     };
-    DissolveTransitions.prototype._onUpdate = function () {
+    DissolveTransition.prototype._onUpdate = function () {
         var _this = this;
         if (this._hasUpdated)
             return;
@@ -364,7 +364,7 @@ var DissolveTransitions = (function (_super) {
             _this._hasUpdated = false;
         });
     };
-    return DissolveTransitions;
+    return DissolveTransition;
 }(EventDispatcher));
 
-export default DissolveTransitions;
+export default DissolveTransition;
