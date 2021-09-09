@@ -161,9 +161,17 @@ var Texture = (function (_super) {
     return Texture;
 }(EventDispatcher));
 
-var VERTEX_SHADER_SOURCE = "\nattribute vec2 position;\nattribute vec2 uv;\nvarying vec2 vUv;\nvoid main() {\n\tgl_Position = vec4( position, 1., 1. );\n\tvUv = uv;\n}\n";
-var FRAGMENT_SHADER_SOURCE = "\nprecision highp float;\nvarying vec2 vUv;\nuniform float progress;\nuniform sampler2D media, mask;\n\nfloat dissolveLowEdge = 0.0;\nfloat dissolveHighEdge = 1.0;\nfloat edgeDelta = dissolveHighEdge - dissolveLowEdge;\n\nvoid main(){\n\n\tvec4 color = texture2D( media, vUv );\n\tfloat dissolveProgress = progress * ( 1.0 + edgeDelta );\n\tfloat alpha = smoothstep( dissolveLowEdge, dissolveHighEdge, clamp( texture2D( mask, vUv ).r - 1.0 + dissolveProgress, 0.0, 1.0 ) );\n\n\tgl_FragColor = vec4( color.rgb, color.a * alpha );\n\t// gl_FragColor = vec4( vec3( color.a * alpha ), 1. );\n\n}\n";
+var VERTEX_SHADER_SOURCE = "\nattribute vec2 position;\nattribute vec2 uv;\nuniform vec2 uvScale;\nvarying vec2 vUv;\nvoid main() {\n\tgl_Position = vec4( position, 1., 1. );\n\n\tvUv = uv;\n\n\tif ( uvScale.y < 1.0 ) {\n\n\t\tfloat offset = ( 1.0 - uvScale.y ) * .5;\n\t\tvUv.y = vUv.y * uvScale.y + offset;\n\n\t} else {\n\n\t\tfloat offset = ( 1.0 - uvScale.x ) * .5;\n\t\tvUv.x = vUv.x * uvScale.x + offset;\n\n\t}\n}\n";
+var FRAGMENT_SHADER_SOURCE = "\nprecision highp float;\nvarying vec2 vUv;\nuniform float progress;\nuniform float dissolveLowEdge;\nuniform float dissolveHighEdge;\nuniform sampler2D media, mask;\n\nvoid main(){\n\n\tvec4 color = texture2D( media, vUv );\n\tfloat alpha = smoothstep( dissolveLowEdge, dissolveHighEdge, clamp( texture2D( mask, vUv ).r - 1.0 + progress, 0.0, 1.0 ) );\n\n\tgl_FragColor = vec4( color.rgb, color.a * alpha );\n\t// gl_FragColor = vec4( vec3( color.a * alpha ), 1. );\n\n}\n";
 
+var VERTEXES = new Float32Array([
+    -1, -1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+    -1, 1,
+]);
 var UV = new Float32Array([
     0.0, 0.0,
     1.0, 0.0,
@@ -176,19 +184,11 @@ var DissolveTransition = (function (_super) {
     __extends(DissolveTransition, _super);
     function DissolveTransition(canvas, media, mask) {
         var _this = _super.call(this) || this;
-        _this.duration = 2000;
+        _this.duration = 4000;
         _this._progress = 0;
         _this._isRunning = false;
         _this._hasUpdated = true;
         _this._destroyed = false;
-        _this._vertexes = new Float32Array([
-            -1, -1,
-            1, -1,
-            -1, 1,
-            1, -1,
-            1, 1,
-            -1, 1,
-        ]);
         _this._canvas = canvas;
         _this._gl = getWebglContext(canvas);
         _this._vertexBuffer = _this._gl.createBuffer();
@@ -207,7 +207,7 @@ var DissolveTransition = (function (_super) {
         _this._gl.enable(_this._gl.BLEND);
         _this._gl.blendFuncSeparate(_this._gl.SRC_ALPHA, _this._gl.ONE_MINUS_SRC_ALPHA, _this._gl.ONE, _this._gl.ZERO);
         _this._gl.bindBuffer(_this._gl.ARRAY_BUFFER, _this._vertexBuffer);
-        _this._gl.bufferData(_this._gl.ARRAY_BUFFER, _this._vertexes, _this._gl.STATIC_DRAW);
+        _this._gl.bufferData(_this._gl.ARRAY_BUFFER, VERTEXES, _this._gl.STATIC_DRAW);
         var position = _this._gl.getAttribLocation(_this._program, 'position');
         _this._gl.vertexAttribPointer(position, 2, _this._gl.FLOAT, false, 0, 0);
         _this._gl.enableVertexAttribArray(position);
@@ -218,9 +218,14 @@ var DissolveTransition = (function (_super) {
         _this._gl.enableVertexAttribArray(uv);
         _this._uniformLocations = {
             progress: _this._gl.getUniformLocation(_this._program, 'progress'),
+            dissolveLowEdge: _this._gl.getUniformLocation(_this._program, 'dissolveLowEdge'),
+            dissolveHighEdge: _this._gl.getUniformLocation(_this._program, 'dissolveHighEdge'),
+            uvScale: _this._gl.getUniformLocation(_this._program, 'uvScale'),
             media: _this._gl.getUniformLocation(_this._program, 'media'),
             mask: _this._gl.getUniformLocation(_this._program, 'mask'),
         };
+        _this._gl.uniform1f(_this._uniformLocations.dissolveLowEdge, 0);
+        _this._gl.uniform1f(_this._uniformLocations.dissolveHighEdge, .2);
         _this._media = new Texture(media, _this._gl);
         _this._mask = new Texture(mask, _this._gl);
         _this._media.addEventListener('updated', _this._updateTexture.bind(_this));
@@ -268,7 +273,7 @@ var DissolveTransition = (function (_super) {
             if (!_this._isRunning)
                 return;
             var elapsedTime = performance.now() - startTime;
-            _this._progress = Math.min(Math.max(elapsedTime / _this.duration, 0), 1);
+            _this._progress = easeOutSine(clamp(elapsedTime / _this.duration, 0, 1));
             _this.render();
             if (_this._progress === 1)
                 _this._isRunning = false;
@@ -328,30 +333,20 @@ var DissolveTransition = (function (_super) {
         this._gl.activeTexture(this._gl.TEXTURE1);
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._mask.texture);
         this._gl.uniform1i(this._uniformLocations.mask, 1);
-        this._onUpdate();
+        this._updateAspect();
     };
     DissolveTransition.prototype._updateAspect = function () {
         var canvasAspect = this._canvas.width / this._canvas.height;
-        var imageAspect = this._media instanceof HTMLImageElement ? this._media.naturalWidth / this._media.naturalHeight :
-            this._media instanceof HTMLCanvasElement ? this._media.width / this._media.height :
+        var mediaAspect = this._media.image instanceof HTMLImageElement ? this._media.image.naturalWidth / this._media.image.naturalHeight :
+            this._media.image instanceof HTMLCanvasElement ? this._media.image.width / this._media.image.height :
                 1;
-        var aspect = imageAspect / canvasAspect;
-        var posX = aspect < 1 ? 1.0 : aspect;
-        var posY = aspect > 1 ? 1.0 : canvasAspect / imageAspect;
-        this._vertexes[0] = -posX;
-        this._vertexes[1] = -posY;
-        this._vertexes[2] = posX;
-        this._vertexes[3] = -posY;
-        this._vertexes[4] = -posX;
-        this._vertexes[5] = posY;
-        this._vertexes[6] = posX;
-        this._vertexes[7] = -posY;
-        this._vertexes[8] = posX;
-        this._vertexes[9] = posY;
-        this._vertexes[10] = -posX;
-        this._vertexes[11] = posY;
-        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
-        this._gl.bufferData(this._gl.ARRAY_BUFFER, this._vertexes, this._gl.STATIC_DRAW);
+        var aspect = mediaAspect / canvasAspect;
+        if (aspect < 1.0) {
+            this._gl.uniform2f(this._uniformLocations.uvScale, 1, aspect);
+        }
+        else {
+            this._gl.uniform2f(this._uniformLocations.uvScale, 1 / aspect, 1);
+        }
         this._onUpdate();
     };
     DissolveTransition.prototype._onUpdate = function () {
@@ -366,5 +361,11 @@ var DissolveTransition = (function (_super) {
     };
     return DissolveTransition;
 }(EventDispatcher));
+function clamp(num, min, max) {
+    return Math.min(Math.max(num, min), max);
+}
+function easeOutSine(x) {
+    return Math.sin((x * Math.PI) / 2);
+}
 
 export default DissolveTransition;

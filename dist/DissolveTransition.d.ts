@@ -11,7 +11,6 @@ export declare class DissolveTransition extends EventDispatcher {
     private _isRunning;
     private _hasUpdated;
     private _destroyed;
-    private _vertexes;
     private _gl;
     private _vertexShader;
     private _fragmentShader;
