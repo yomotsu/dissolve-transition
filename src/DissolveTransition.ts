@@ -8,6 +8,16 @@ import {
 	FRAGMENT_SHADER_SOURCE,
 } from './shader';
 
+
+const VERTEXES = new Float32Array( [
+	- 1, - 1,
+		1, - 1,
+	- 1,   1,
+		1, - 1,
+		1,   1,
+	- 1,   1,
+] );
+
 const UV = new Float32Array( [
 	0.0, 0.0,
 	1.0, 0.0,
@@ -60,7 +70,7 @@ export class DissolveTransition extends EventDispatcher {
 
 	}
 
-	duration: number = 2000;
+	duration: number = 4000;
 
 	private _progress: number = 0;
 	private _canvas: HTMLCanvasElement;
@@ -70,14 +80,6 @@ export class DissolveTransition extends EventDispatcher {
 	private _hasUpdated: boolean = true;
 	private _destroyed: boolean = false;
 
-	private _vertexes: Float32Array = new Float32Array( [
-		- 1, - 1,
-		  1, - 1,
-		- 1,   1,
-		  1, - 1,
-		  1,   1,
-		- 1,   1,
-	] );
 	private _gl: WebGLRenderingContext;
 	private _vertexShader: WebGLShader;
 	private _fragmentShader: WebGLShader | null;
@@ -85,9 +87,12 @@ export class DissolveTransition extends EventDispatcher {
 	private _vertexBuffer: WebGLBuffer;
 	private _uvBuffer: WebGLBuffer;
 	private _uniformLocations: {
-		progress       : WebGLUniformLocation | null,
-		media          : WebGLUniformLocation | null,
-		mask           : WebGLUniformLocation | null,
+		progress        : WebGLUniformLocation | null,
+		dissolveLowEdge :WebGLUniformLocation | null,
+		dissolveHighEdge:WebGLUniformLocation | null,
+		uvScale         : WebGLUniformLocation | null,
+		media           : WebGLUniformLocation | null,
+		mask            : WebGLUniformLocation | null,
 	};
 
 	constructor( canvas: HTMLCanvasElement, media: TextureSource, mask: TextureSource ) {
@@ -125,7 +130,7 @@ export class DissolveTransition extends EventDispatcher {
 
 		// vertexes
 		this._gl.bindBuffer( this._gl.ARRAY_BUFFER, this._vertexBuffer );
-		this._gl.bufferData( this._gl.ARRAY_BUFFER, this._vertexes, this._gl.STATIC_DRAW );
+		this._gl.bufferData( this._gl.ARRAY_BUFFER, VERTEXES, this._gl.STATIC_DRAW );
 
 		const position = this._gl.getAttribLocation( this._program, 'position' );
 		this._gl.vertexAttribPointer( position, 2, this._gl.FLOAT, false, 0, 0 );
@@ -140,10 +145,16 @@ export class DissolveTransition extends EventDispatcher {
 		this._gl.enableVertexAttribArray( uv );
 
 		this._uniformLocations = {
-			progress: this._gl.getUniformLocation( this._program, 'progress' ),
-			media   : this._gl.getUniformLocation( this._program, 'media' ),
-			mask    : this._gl.getUniformLocation( this._program, 'mask' ),
+			progress        : this._gl.getUniformLocation( this._program, 'progress' ),
+			dissolveLowEdge : this._gl.getUniformLocation( this._program, 'dissolveLowEdge' ),
+			dissolveHighEdge: this._gl.getUniformLocation( this._program, 'dissolveHighEdge' ),
+			uvScale         : this._gl.getUniformLocation( this._program, 'uvScale' ),
+			media           : this._gl.getUniformLocation( this._program, 'media' ),
+			mask            : this._gl.getUniformLocation( this._program, 'mask' ),
 		};
+
+		this._gl.uniform1f( this._uniformLocations.dissolveLowEdge, 0 );
+		this._gl.uniform1f( this._uniformLocations.dissolveHighEdge, .2 );
 
 		this._media = new Texture( media, this._gl );
 		this._mask  = new Texture( mask,  this._gl );
@@ -171,7 +182,7 @@ export class DissolveTransition extends EventDispatcher {
 			if ( ! this._isRunning ) return;
 
 			const elapsedTime = performance.now() - startTime;
-			this._progress = Math.min( Math.max( elapsedTime / this.duration, 0 ), 1 );
+			this._progress = easeOutSine( clamp( elapsedTime / this.duration, 0, 1 ) );
 
 			this.render();
 
@@ -261,7 +272,7 @@ export class DissolveTransition extends EventDispatcher {
 		this._gl.bindTexture( this._gl.TEXTURE_2D, this._mask.texture );
 		this._gl.uniform1i( this._uniformLocations.mask, 1 );
 
-		this._onUpdate();
+		this._updateAspect();
 
 	}
 
@@ -269,23 +280,21 @@ export class DissolveTransition extends EventDispatcher {
 
 		// update vertex buffer
 		const canvasAspect = this._canvas.width / this._canvas.height;
-		const imageAspect =
-			this._media instanceof HTMLImageElement ? this._media.naturalWidth / this._media.naturalHeight :
-			this._media instanceof HTMLCanvasElement ? this._media.width / this._media.height :
+		const mediaAspect =
+			this._media.image instanceof HTMLImageElement ? this._media.image.naturalWidth / this._media.image.naturalHeight :
+			this._media.image instanceof HTMLCanvasElement ? this._media.image.width / this._media.image.height :
 			1;
-		const aspect = imageAspect / canvasAspect;
-		const posX = aspect < 1 ? 1.0 : aspect;
-		const posY = aspect > 1 ? 1.0 : canvasAspect / imageAspect;
+		const aspect = mediaAspect / canvasAspect;
 
-		this._vertexes[  0 ] = - posX; this._vertexes[  1 ] = - posY;
-		this._vertexes[  2 ] =   posX; this._vertexes[  3 ] = - posY;
-		this._vertexes[  4 ] = - posX; this._vertexes[  5 ] =   posY;
-		this._vertexes[  6 ] =   posX; this._vertexes[  7 ] = - posY;
-		this._vertexes[  8 ] =   posX; this._vertexes[  9 ] =   posY;
-		this._vertexes[ 10 ] = - posX; this._vertexes[ 11 ] =   posY;
+		if ( aspect < 1.0 ) {
 
-		this._gl.bindBuffer( this._gl.ARRAY_BUFFER, this._vertexBuffer );
-		this._gl.bufferData( this._gl.ARRAY_BUFFER, this._vertexes, this._gl.STATIC_DRAW );
+			this._gl.uniform2f( this._uniformLocations.uvScale, 1, aspect );
+
+		} else {
+
+			this._gl.uniform2f( this._uniformLocations.uvScale, 1 / aspect, 1 );
+
+		}
 
 		this._onUpdate();
 
@@ -306,3 +315,16 @@ export class DissolveTransition extends EventDispatcher {
 	}
 
 }
+
+function clamp( num: number, min: number, max: number ): number {
+
+	return Math.min( Math.max( num, min ), max );
+
+}
+
+function easeOutSine( x: number ): number {
+
+  return Math.sin( ( x * Math.PI) / 2 );
+
+}
+
