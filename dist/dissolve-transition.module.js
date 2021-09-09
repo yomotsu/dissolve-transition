@@ -275,8 +275,10 @@ var DissolveTransition = (function (_super) {
             var elapsedTime = performance.now() - startTime;
             _this._progress = easeOutSine(clamp(elapsedTime / _this.duration, 0, 1));
             _this.render();
-            if (_this._progress === 1)
+            if (_this._progress === 1) {
                 _this._isRunning = false;
+                _this.dispatchEvent({ type: 'transitionEnd' });
+            }
             requestAnimationFrame(tick);
         };
         tick();
@@ -297,10 +299,8 @@ var DissolveTransition = (function (_super) {
         this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
         this._gl.drawArrays(this._gl.TRIANGLES, 0, 6);
         this._gl.flush();
-        if (this._progress === 1) {
+        if (this._progress === 1)
             this._hasUpdated = false;
-            this.dispatchEvent({ type: 'transitionEnd' });
-        }
     };
     DissolveTransition.prototype.destroy = function (removeElement) {
         if (removeElement === void 0) { removeElement = false; }
@@ -351,6 +351,8 @@ var DissolveTransition = (function (_super) {
     };
     DissolveTransition.prototype._onUpdate = function () {
         var _this = this;
+        if (this._isRunning)
+            return;
         if (this._hasUpdated)
             return;
         this._hasUpdated = true;

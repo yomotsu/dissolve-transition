@@ -186,7 +186,13 @@ export class DissolveTransition extends EventDispatcher {
 
 			this.render();
 
-			if ( this._progress === 1 ) this._isRunning = false;
+			if ( this._progress === 1 ) {
+
+				this._isRunning = false;
+				this.dispatchEvent( { type: 'transitionEnd' } );
+
+			}
+
 			requestAnimationFrame( tick );
 
 		};
@@ -218,13 +224,7 @@ export class DissolveTransition extends EventDispatcher {
 		this._gl.drawArrays( this._gl.TRIANGLES, 0, 6 );
 		this._gl.flush();
 
-		if ( this._progress === 1 ) {
-
-			this._hasUpdated = false;
-			this.dispatchEvent( { type: 'transitionEnd' } );
-			// transitionEnd!
-
-		}
+		if ( this._progress === 1 ) this._hasUpdated = false;
 
 	}
 
@@ -302,6 +302,7 @@ export class DissolveTransition extends EventDispatcher {
 
 	private _onUpdate() {
 
+		if ( this._isRunning ) return; // no need to render here. will be renderd anyway
 		if ( this._hasUpdated ) return;
 
 		this._hasUpdated = true;
