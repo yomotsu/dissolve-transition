@@ -9,11 +9,11 @@
   "main": "dist/dissolve-transition.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
-    "rollup": "^2.53.1",
+    "rollup": "^2.56.3",
     "rollup-plugin-typescript2": "^0.30.0",
     "rollup-watch": "^4.3.1",
-    "terser": "^5.7.1",
-    "typescript": "^4.3.5"
+    "terser": "^5.7.2",
+    "typescript": "^4.4.2"
   },
   "scripts": {
     "dev": "rollup --config --watch",
