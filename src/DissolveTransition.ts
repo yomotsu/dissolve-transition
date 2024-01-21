@@ -201,6 +201,14 @@ export class DissolveTransition extends EventDispatcher {
 
 	}
 
+	reset() {
+
+		this._isRunning = false;
+		this._progress = 0;
+		this.render();
+
+	}
+
 	setSize( w: number, h: number ) {
 
 		if ( this._canvas.width  === w && this._canvas.height === h ) return;

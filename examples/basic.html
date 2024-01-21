@@ -10,6 +10,7 @@ body {background: url( "./bg.png" );}
 <body>
 <a href="https://github.com/yomotsu/dissolve-transition">GitHub repo</a><br>
 <button type="button">start</button><br>
+<button type="button">reset</button><br>
 <canvas width="1000" height="500"></canvas>
 
 <script src="../dist/dissolve-transition.js"></script>
@@ -26,11 +27,17 @@ Promise.all( [
 		DissolveTransition.convertPowerOfTwo( images[ 1 ] )
 	)
 
-	document.querySelector( 'button' ).addEventListener( 'click', () => {
+document.querySelectorAll( 'button' )[ 0 ].addEventListener( 'click', () => {
 
-		dissolveTransition.start();
+	dissolveTransition.start();
 
-	} );
+} );
+
+document.querySelectorAll( 'button' )[ 1 ].addEventListener( 'click', () => {
+
+	dissolveTransition.reset();
+
+} );
 
 	dissolveTransition.start();
 
