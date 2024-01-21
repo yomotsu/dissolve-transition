@@ -1,2 +1,2 @@
-export declare type TextureSource = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
-export declare type MediaSource = string | TextureSource;
+export type TextureSource = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
+export type MediaSource = string | TextureSource;

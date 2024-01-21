@@ -8,87 +8,55 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 	typeof define === 'function' && define.amd ? define(factory) :
 	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.DissolveTransition = factory());
-}(this, (function () { 'use strict';
+})(this, (function () { 'use strict';
 
-	/*! *****************************************************************************
-	Copyright (c) Microsoft Corporation.
-
-	Permission to use, copy, modify, and/or distribute this software for any
-	purpose with or without fee is hereby granted.
-
-	THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-	REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-	INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-	LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-	OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-	PERFORMANCE OF THIS SOFTWARE.
-	***************************************************************************** */
-	/* global Reflect, Promise */
-
-	var extendStatics = function(d, b) {
-	    extendStatics = Object.setPrototypeOf ||
-	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-	        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-	    return extendStatics(d, b);
-	};
-
-	function __extends(d, b) {
-	    if (typeof b !== "function" && b !== null)
-	        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-	    extendStatics(d, b);
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	}
-
-	var EventDispatcher = (function () {
-	    function EventDispatcher() {
+	class EventDispatcher {
+	    constructor() {
 	        this._listeners = {};
 	    }
-	    EventDispatcher.prototype.addEventListener = function (type, listener) {
-	        var listeners = this._listeners;
+	    addEventListener(type, listener) {
+	        const listeners = this._listeners;
 	        if (listeners[type] === undefined)
 	            listeners[type] = [];
 	        if (listeners[type].indexOf(listener) === -1) {
 	            listeners[type].push(listener);
 	        }
-	    };
-	    EventDispatcher.prototype.hasEventListener = function (type, listener) {
-	        var listeners = this._listeners;
+	    }
+	    hasEventListener(type, listener) {
+	        const listeners = this._listeners;
 	        return listeners[type] !== undefined && listeners[type].indexOf(listener) !== -1;
-	    };
-	    EventDispatcher.prototype.removeEventListener = function (type, listener) {
-	        var listeners = this._listeners;
-	        var listenerArray = listeners[type];
+	    }
+	    removeEventListener(type, listener) {
+	        const listeners = this._listeners;
+	        const listenerArray = listeners[type];
 	        if (listenerArray !== undefined) {
-	            var index = listenerArray.indexOf(listener);
+	            const index = listenerArray.indexOf(listener);
 	            if (index !== -1)
 	                listenerArray.splice(index, 1);
 	        }
-	    };
-	    EventDispatcher.prototype.dispatchEvent = function (event) {
-	        var listeners = this._listeners;
-	        var listenerArray = listeners[event.type];
+	    }
+	    dispatchEvent(event) {
+	        const listeners = this._listeners;
+	        const listenerArray = listeners[event.type];
 	        if (listenerArray !== undefined) {
 	            event.target = this;
-	            var array = listenerArray.slice(0);
-	            for (var i = 0, l = array.length; i < l; i++) {
+	            const array = listenerArray.slice(0);
+	            for (let i = 0, l = array.length; i < l; i++) {
 	                array[i].call(this, event);
 	            }
 	        }
-	    };
-	    return EventDispatcher;
-	}());
+	    }
+	}
 
 	function getWebglContext(canvas, contextAttributes) {
 	    return (canvas.getContext('webgl', contextAttributes) ||
 	        canvas.getContext('experimental-webgl', contextAttributes));
 	}
-	var MAX_TEXTURE_SIZE = (function () {
-	    var $canvas = document.createElement('canvas');
-	    var gl = getWebglContext($canvas);
-	    var MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-	    var ext = gl.getExtension('WEBGL_lose_context');
+	const MAX_TEXTURE_SIZE = (() => {
+	    const $canvas = document.createElement('canvas');
+	    const gl = getWebglContext($canvas);
+	    const MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+	    const ext = gl.getExtension('WEBGL_lose_context');
 	    if (ext)
 	        ext.loseContext();
 	    return MAX_TEXTURE_SIZE;
@@ -100,43 +68,40 @@
 	    return (value & (value - 1)) === 0 && value !== 0;
 	}
 
-	var defaultImage = document.createElement('canvas');
+	const defaultImage = document.createElement('canvas');
 	defaultImage.width = 2;
 	defaultImage.height = 2;
-	var Texture = (function (_super) {
-	    __extends(Texture, _super);
-	    function Texture(image, gl) {
-	        var _this = _super.call(this) || this;
-	        _this.image = image;
-	        _this._gl = gl;
-	        _this.texture = gl.createTexture();
-	        gl.bindTexture(gl.TEXTURE_2D, _this.texture);
+	class Texture extends EventDispatcher {
+	    constructor(image, gl) {
+	        super();
+	        this.image = image;
+	        this._gl = gl;
+	        this.texture = gl.createTexture();
+	        gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
-	        _this.onload();
-	        return _this;
+	        this.onload();
 	    }
-	    Texture.prototype.isLoaded = function () {
+	    isLoaded() {
 	        if (this.image instanceof HTMLCanvasElement)
 	            return true;
 	        if (this.image instanceof HTMLVideoElement)
 	            return true;
 	        return this.image.naturalWidth !== 0;
-	    };
-	    Texture.prototype.onload = function () {
-	        var _this = this;
-	        var onload = function () {
-	            _this.image.removeEventListener('load', onload);
-	            _this.setImage(_this.image);
+	    }
+	    onload() {
+	        const onload = () => {
+	            this.image.removeEventListener('load', onload);
+	            this.setImage(this.image);
 	        };
 	        if (this.isLoaded()) {
 	            this.setImage(this.image);
 	            return;
 	        }
 	        this.image.addEventListener('load', onload);
-	    };
-	    Texture.prototype.setImage = function (image) {
-	        var _gl = this._gl;
-	        var _image;
+	    }
+	    setImage(image) {
+	        const _gl = this._gl;
+	        let _image;
 	        this.image = image;
 	        if (this.isLoaded()) {
 	            _image = this.image;
@@ -149,9 +114,9 @@
 	            this.dispatchEvent({ type: 'updated' });
 	            return;
 	        }
-	        var width = this.image instanceof HTMLImageElement ? this.image.naturalWidth : this.image.width;
-	        var height = this.image instanceof HTMLImageElement ? this.image.naturalHeight : this.image.height;
-	        var isPowerOfTwoSize = isPowerOfTwo(width) && isPowerOfTwo(height);
+	        const width = this.image instanceof HTMLImageElement ? this.image.naturalWidth : this.image.width;
+	        const height = this.image instanceof HTMLImageElement ? this.image.naturalHeight : this.image.height;
+	        const isPowerOfTwoSize = isPowerOfTwo(width) && isPowerOfTwo(height);
 	        _gl.bindTexture(_gl.TEXTURE_2D, this.texture);
 	        _gl.pixelStorei(_gl.UNPACK_FLIP_Y_WEBGL, true);
 	        _gl.texParameteri(_gl.TEXTURE_2D, _gl.TEXTURE_MIN_FILTER, isPowerOfTwoSize ? _gl.LINEAR_MIPMAP_NEAREST : _gl.LINEAR);
@@ -163,14 +128,52 @@
 	            _gl.generateMipmap(_gl.TEXTURE_2D);
 	        _gl.bindTexture(_gl.TEXTURE_2D, null);
 	        this.dispatchEvent({ type: 'updated' });
-	    };
-	    return Texture;
-	}(EventDispatcher));
+	    }
+	}
 
-	var VERTEX_SHADER_SOURCE = "\nattribute vec2 position;\nattribute vec2 uv;\nuniform vec2 uvScale;\nvarying vec2 vUv;\nvoid main() {\n\tgl_Position = vec4( position, 1., 1. );\n\n\tvUv = uv;\n\n\tif ( uvScale.y < 1.0 ) {\n\n\t\tfloat offset = ( 1.0 - uvScale.y ) * .5;\n\t\tvUv.y = vUv.y * uvScale.y + offset;\n\n\t} else {\n\n\t\tfloat offset = ( 1.0 - uvScale.x ) * .5;\n\t\tvUv.x = vUv.x * uvScale.x + offset;\n\n\t}\n}\n";
-	var FRAGMENT_SHADER_SOURCE = "\nprecision highp float;\nvarying vec2 vUv;\nuniform float progress;\nuniform float dissolveLowEdge;\nuniform float dissolveHighEdge;\nuniform sampler2D media, mask;\n\nvoid main(){\n\n\tvec4 color = texture2D( media, vUv );\n\tfloat alpha = smoothstep( dissolveLowEdge, dissolveHighEdge, clamp( texture2D( mask, vUv ).r - 1.0 + progress, 0.0, 1.0 ) );\n\n\tgl_FragColor = vec4( color.rgb, color.a * alpha );\n\t// gl_FragColor = vec4( vec3( color.a * alpha ), 1. );\n\n}\n";
+	const VERTEX_SHADER_SOURCE = `
+attribute vec2 position;
+attribute vec2 uv;
+uniform vec2 uvScale;
+varying vec2 vUv;
+void main() {
+	gl_Position = vec4( position, 1., 1. );
 
-	var VERTEXES = new Float32Array([
+	vUv = uv;
+
+	if ( uvScale.y < 1.0 ) {
+
+		float offset = ( 1.0 - uvScale.y ) * .5;
+		vUv.y = vUv.y * uvScale.y + offset;
+
+	} else {
+
+		float offset = ( 1.0 - uvScale.x ) * .5;
+		vUv.x = vUv.x * uvScale.x + offset;
+
+	}
+}
+`;
+	const FRAGMENT_SHADER_SOURCE = `
+precision highp float;
+varying vec2 vUv;
+uniform float progress;
+uniform float dissolveLowEdge;
+uniform float dissolveHighEdge;
+uniform sampler2D media, mask;
+
+void main(){
+
+	vec4 color = texture2D( media, vUv );
+	float alpha = smoothstep( dissolveLowEdge, dissolveHighEdge, clamp( texture2D( mask, vUv ).r - 1.0 + progress, 0.0, 1.0 ) );
+
+	gl_FragColor = vec4( color.rgb, color.a * alpha );
+	// gl_FragColor = vec4( vec3( color.a * alpha ), 1. );
+
+}
+`;
+
+	const VERTEXES = new Float32Array([
 	    -1, -1,
 	    1, -1,
 	    -1, 1,
@@ -178,7 +181,7 @@
 	    1, 1,
 	    -1, 1,
 	]);
-	var UV = new Float32Array([
+	const UV = new Float32Array([
 	    0.0, 0.0,
 	    1.0, 0.0,
 	    0.0, 1.0,
@@ -186,118 +189,121 @@
 	    1.0, 1.0,
 	    0.0, 1.0,
 	]);
-	var DissolveTransition = (function (_super) {
-	    __extends(DissolveTransition, _super);
-	    function DissolveTransition(canvas, media, mask) {
-	        var _this = _super.call(this) || this;
-	        _this.duration = 4000;
-	        _this._progress = 0;
-	        _this._isRunning = false;
-	        _this._hasUpdated = true;
-	        _this._destroyed = false;
-	        _this._canvas = canvas;
-	        _this._gl = getWebglContext(canvas);
-	        _this._vertexBuffer = _this._gl.createBuffer();
-	        _this._uvBuffer = _this._gl.createBuffer();
-	        _this._vertexShader = _this._gl.createShader(_this._gl.VERTEX_SHADER);
-	        _this._gl.shaderSource(_this._vertexShader, VERTEX_SHADER_SOURCE);
-	        _this._gl.compileShader(_this._vertexShader);
-	        _this._fragmentShader = _this._gl.createShader(_this._gl.FRAGMENT_SHADER);
-	        _this._gl.shaderSource(_this._fragmentShader, FRAGMENT_SHADER_SOURCE);
-	        _this._gl.compileShader(_this._fragmentShader);
-	        _this._program = _this._gl.createProgram();
-	        _this._gl.attachShader(_this._program, _this._vertexShader);
-	        _this._gl.attachShader(_this._program, _this._fragmentShader);
-	        _this._gl.linkProgram(_this._program);
-	        _this._gl.useProgram(_this._program);
-	        _this._gl.enable(_this._gl.BLEND);
-	        _this._gl.blendFuncSeparate(_this._gl.SRC_ALPHA, _this._gl.ONE_MINUS_SRC_ALPHA, _this._gl.ONE, _this._gl.ZERO);
-	        _this._gl.bindBuffer(_this._gl.ARRAY_BUFFER, _this._vertexBuffer);
-	        _this._gl.bufferData(_this._gl.ARRAY_BUFFER, VERTEXES, _this._gl.STATIC_DRAW);
-	        var position = _this._gl.getAttribLocation(_this._program, 'position');
-	        _this._gl.vertexAttribPointer(position, 2, _this._gl.FLOAT, false, 0, 0);
-	        _this._gl.enableVertexAttribArray(position);
-	        _this._gl.bindBuffer(_this._gl.ARRAY_BUFFER, _this._uvBuffer);
-	        _this._gl.bufferData(_this._gl.ARRAY_BUFFER, UV, _this._gl.STATIC_DRAW);
-	        var uv = _this._gl.getAttribLocation(_this._program, 'uv');
-	        _this._gl.vertexAttribPointer(uv, 2, _this._gl.FLOAT, false, 0, 0);
-	        _this._gl.enableVertexAttribArray(uv);
-	        _this._uniformLocations = {
-	            progress: _this._gl.getUniformLocation(_this._program, 'progress'),
-	            dissolveLowEdge: _this._gl.getUniformLocation(_this._program, 'dissolveLowEdge'),
-	            dissolveHighEdge: _this._gl.getUniformLocation(_this._program, 'dissolveHighEdge'),
-	            uvScale: _this._gl.getUniformLocation(_this._program, 'uvScale'),
-	            media: _this._gl.getUniformLocation(_this._program, 'media'),
-	            mask: _this._gl.getUniformLocation(_this._program, 'mask'),
-	        };
-	        _this._gl.uniform1f(_this._uniformLocations.dissolveLowEdge, 0);
-	        _this._gl.uniform1f(_this._uniformLocations.dissolveHighEdge, .2);
-	        _this._media = new Texture(media, _this._gl);
-	        _this._mask = new Texture(mask, _this._gl);
-	        _this._media.addEventListener('updated', _this._updateTexture.bind(_this));
-	        _this._mask.addEventListener('updated', _this._updateTexture.bind(_this));
-	        _this._updateTexture();
-	        _this.setSize(_this._canvas.width, _this._canvas.height);
-	        return _this;
-	    }
-	    DissolveTransition.loadImage = function (imageSource) {
-	        return new Promise(function (resolve) {
-	            var img = new Image();
-	            var onLoad = function () {
+	class DissolveTransition extends EventDispatcher {
+	    static loadImage(imageSource) {
+	        return new Promise((resolve) => {
+	            const img = new Image();
+	            const onLoad = () => {
 	                img.removeEventListener('load', onLoad);
 	                resolve(img);
 	            };
 	            img.addEventListener('load', onLoad);
 	            img.src = imageSource;
 	        });
-	    };
-	    DissolveTransition.convertPowerOfTwo = function (image) {
+	    }
+	    static convertPowerOfTwo(image) {
 	        var _a;
-	        var $canvas = document.createElement('canvas');
+	        const $canvas = document.createElement('canvas');
 	        if (image.naturalWidth === 0) {
 	            console.warn('Image must be loaded before converting');
 	            return image;
 	        }
-	        var width = Math.min(ceilPowerOfTwo(image.naturalWidth), MAX_TEXTURE_SIZE);
-	        var height = Math.min(ceilPowerOfTwo(image.naturalHeight), MAX_TEXTURE_SIZE);
+	        const width = Math.min(ceilPowerOfTwo(image.naturalWidth), MAX_TEXTURE_SIZE);
+	        const height = Math.min(ceilPowerOfTwo(image.naturalHeight), MAX_TEXTURE_SIZE);
 	        if (isPowerOfTwo(width) && isPowerOfTwo(height))
 	            return image;
 	        $canvas.width = width;
 	        $canvas.height = height;
 	        (_a = $canvas.getContext('2d')) === null || _a === void 0 ? void 0 : _a.drawImage(image, 0, 0, width, height);
 	        return $canvas;
-	    };
-	    DissolveTransition.prototype.start = function () {
-	        var _this = this;
+	    }
+	    constructor(canvas, media, mask) {
+	        super();
+	        this.duration = 4000;
+	        this._progress = 0;
+	        this._isRunning = false;
+	        this._hasUpdated = true;
+	        this._destroyed = false;
+	        this._canvas = canvas;
+	        this._gl = getWebglContext(canvas);
+	        this._vertexBuffer = this._gl.createBuffer();
+	        this._uvBuffer = this._gl.createBuffer();
+	        this._vertexShader = this._gl.createShader(this._gl.VERTEX_SHADER);
+	        this._gl.shaderSource(this._vertexShader, VERTEX_SHADER_SOURCE);
+	        this._gl.compileShader(this._vertexShader);
+	        this._fragmentShader = this._gl.createShader(this._gl.FRAGMENT_SHADER);
+	        this._gl.shaderSource(this._fragmentShader, FRAGMENT_SHADER_SOURCE);
+	        this._gl.compileShader(this._fragmentShader);
+	        this._program = this._gl.createProgram();
+	        this._gl.attachShader(this._program, this._vertexShader);
+	        this._gl.attachShader(this._program, this._fragmentShader);
+	        this._gl.linkProgram(this._program);
+	        this._gl.useProgram(this._program);
+	        this._gl.enable(this._gl.BLEND);
+	        this._gl.blendFuncSeparate(this._gl.SRC_ALPHA, this._gl.ONE_MINUS_SRC_ALPHA, this._gl.ONE, this._gl.ZERO);
+	        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexBuffer);
+	        this._gl.bufferData(this._gl.ARRAY_BUFFER, VERTEXES, this._gl.STATIC_DRAW);
+	        const position = this._gl.getAttribLocation(this._program, 'position');
+	        this._gl.vertexAttribPointer(position, 2, this._gl.FLOAT, false, 0, 0);
+	        this._gl.enableVertexAttribArray(position);
+	        this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._uvBuffer);
+	        this._gl.bufferData(this._gl.ARRAY_BUFFER, UV, this._gl.STATIC_DRAW);
+	        const uv = this._gl.getAttribLocation(this._program, 'uv');
+	        this._gl.vertexAttribPointer(uv, 2, this._gl.FLOAT, false, 0, 0);
+	        this._gl.enableVertexAttribArray(uv);
+	        this._uniformLocations = {
+	            progress: this._gl.getUniformLocation(this._program, 'progress'),
+	            dissolveLowEdge: this._gl.getUniformLocation(this._program, 'dissolveLowEdge'),
+	            dissolveHighEdge: this._gl.getUniformLocation(this._program, 'dissolveHighEdge'),
+	            uvScale: this._gl.getUniformLocation(this._program, 'uvScale'),
+	            media: this._gl.getUniformLocation(this._program, 'media'),
+	            mask: this._gl.getUniformLocation(this._program, 'mask'),
+	        };
+	        this._gl.uniform1f(this._uniformLocations.dissolveLowEdge, 0);
+	        this._gl.uniform1f(this._uniformLocations.dissolveHighEdge, .2);
+	        this._media = new Texture(media, this._gl);
+	        this._mask = new Texture(mask, this._gl);
+	        this._media.addEventListener('updated', this._updateTexture.bind(this));
+	        this._mask.addEventListener('updated', this._updateTexture.bind(this));
+	        this._updateTexture();
+	        this.setSize(this._canvas.width, this._canvas.height);
+	        return this;
+	    }
+	    start() {
 	        if (this._isRunning)
 	            return;
 	        this._isRunning = true;
-	        var startTime = performance.now();
-	        var tick = function () {
-	            if (_this._destroyed)
+	        const startTime = performance.now();
+	        const tick = () => {
+	            if (this._destroyed)
 	                return;
-	            if (!_this._isRunning)
+	            if (!this._isRunning)
 	                return;
-	            var elapsedTime = performance.now() - startTime;
-	            _this._progress = easeOutSine(clamp(elapsedTime / _this.duration, 0, 1));
-	            _this.render();
-	            if (_this._progress === 1) {
-	                _this._isRunning = false;
-	                _this.dispatchEvent({ type: 'transitionEnd' });
+	            const elapsedTime = performance.now() - startTime;
+	            this._progress = easeOutSine(clamp(elapsedTime / this.duration, 0, 1));
+	            this.render();
+	            if (this._progress === 1) {
+	                this._isRunning = false;
+	                this.dispatchEvent({ type: 'transitionEnd' });
 	            }
 	            requestAnimationFrame(tick);
 	        };
 	        tick();
-	    };
-	    DissolveTransition.prototype.setSize = function (w, h) {
+	    }
+	    reset() {
+	        this._isRunning = false;
+	        this._progress = 0;
+	        this.render();
+	    }
+	    setSize(w, h) {
 	        if (this._canvas.width === w && this._canvas.height === h)
 	            return;
 	        this._canvas.width = w;
 	        this._canvas.height = h;
 	        this._gl.viewport(0, 0, w, h);
 	        this._updateAspect();
-	    };
-	    DissolveTransition.prototype.render = function () {
+	    }
+	    render() {
 	        if (this._destroyed)
 	            return;
 	        this._gl.clearColor(0, 0, 0, 0);
@@ -307,9 +313,8 @@
 	        this._gl.flush();
 	        if (this._progress === 1)
 	            this._hasUpdated = false;
-	    };
-	    DissolveTransition.prototype.destroy = function (removeElement) {
-	        if (removeElement === void 0) { removeElement = false; }
+	    }
+	    destroy(removeElement = false) {
 	        this._destroyed = true;
 	        this._isRunning = false;
 	        if (removeElement)
@@ -331,8 +336,8 @@
 	        if (removeElement && !!this._canvas.parentNode) {
 	            this._canvas.parentNode.removeChild(this._canvas);
 	        }
-	    };
-	    DissolveTransition.prototype._updateTexture = function () {
+	    }
+	    _updateTexture() {
 	        this._gl.activeTexture(this._gl.TEXTURE0);
 	        this._gl.bindTexture(this._gl.TEXTURE_2D, this._media.texture);
 	        this._gl.uniform1i(this._uniformLocations.media, 0);
@@ -340,13 +345,13 @@
 	        this._gl.bindTexture(this._gl.TEXTURE_2D, this._mask.texture);
 	        this._gl.uniform1i(this._uniformLocations.mask, 1);
 	        this._updateAspect();
-	    };
-	    DissolveTransition.prototype._updateAspect = function () {
-	        var canvasAspect = this._canvas.width / this._canvas.height;
-	        var mediaAspect = this._media.image instanceof HTMLImageElement ? this._media.image.naturalWidth / this._media.image.naturalHeight :
+	    }
+	    _updateAspect() {
+	        const canvasAspect = this._canvas.width / this._canvas.height;
+	        const mediaAspect = this._media.image instanceof HTMLImageElement ? this._media.image.naturalWidth / this._media.image.naturalHeight :
 	            this._media.image instanceof HTMLCanvasElement ? this._media.image.width / this._media.image.height :
 	                1;
-	        var aspect = mediaAspect / canvasAspect;
+	        const aspect = mediaAspect / canvasAspect;
 	        if (aspect < 1.0) {
 	            this._gl.uniform2f(this._uniformLocations.uvScale, 1, aspect);
 	        }
@@ -354,21 +359,19 @@
 	            this._gl.uniform2f(this._uniformLocations.uvScale, 1 / aspect, 1);
 	        }
 	        this._onUpdate();
-	    };
-	    DissolveTransition.prototype._onUpdate = function () {
-	        var _this = this;
+	    }
+	    _onUpdate() {
 	        if (this._isRunning)
 	            return;
 	        if (this._hasUpdated)
 	            return;
 	        this._hasUpdated = true;
-	        requestAnimationFrame(function () {
-	            _this.render();
-	            _this._hasUpdated = false;
+	        requestAnimationFrame(() => {
+	            this.render();
+	            this._hasUpdated = false;
 	        });
-	    };
-	    return DissolveTransition;
-	}(EventDispatcher));
+	    }
+	}
 	function clamp(num, min, max) {
 	    return Math.min(Math.max(num, min), max);
 	}
@@ -378,4 +381,4 @@
 
 	return DissolveTransition;
 
-})));
+}));

@@ -20,6 +20,7 @@ export declare class DissolveTransition extends EventDispatcher {
     private _uniformLocations;
     constructor(canvas: HTMLCanvasElement, media: TextureSource, mask: TextureSource);
     start(): void;
+    reset(): void;
     setSize(w: number, h: number): void;
     render(): void;
     destroy(removeElement?: boolean): void;
