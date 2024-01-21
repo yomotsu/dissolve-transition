@@ -4,7 +4,7 @@
     "declarationDir": "./dist",
     "outDir": "./dist",
     "baseUrl": "src",
-    "target": "es5",
+    "target": "es2015",
     "lib": [
       "es6",
       "dom"
